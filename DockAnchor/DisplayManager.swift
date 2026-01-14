@@ -2,7 +2,9 @@
 //  DisplayManager.swift
 //  DockAnchor
 //
-//  Created for DockAnchor v2.0
+//  Created by Bradley Wyatt on 7/2/25.
+//  Copyright © 2025 Bradley Wyatt.
+//  Modified by Dave J. on 1/13/26.
 //
 
 import Foundation
@@ -10,8 +12,8 @@ import CoreGraphics
 import Cocoa
 
 struct HardwareDisplay: Identifiable, Equatable, Hashable {
-    let id: String // Persistent UUID/Serial
-    let directDisplayID: CGDirectDisplayID // Volatile ID (for current session)
+    let id: String
+    let directDisplayID: CGDirectDisplayID
     let name: String
     let isBuiltIn: Bool
 }
@@ -21,7 +23,6 @@ class DisplayManager {
     
     private let kCollectionsKey = "DockAnchor_Collections"
     
-    // Mapping of Volatile ID -> Persistent Info
     var currentDisplays: [HardwareDisplay] = []
     
     // MARK: - Hardware Identification
@@ -32,11 +33,8 @@ class DisplayManager {
         for screen in NSScreen.screens {
             guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { continue }
             
-            // Generate Persistent Fingerprint
             var persistentID = "Unknown"
             
-            // FIX: Explicitly unwrap the Unmanaged<CFUUID>
-            // We use takeRetainedValue() to transfer ownership to Swift memory management
             if let uuidUnmanaged = CGDisplayCreateUUIDFromDisplayID(displayID) {
                 let uuid = uuidUnmanaged.takeRetainedValue()
                 if let uuidString = CFUUIDCreateString(nil, uuid) as String? {
@@ -44,7 +42,6 @@ class DisplayManager {
                 }
             }
             
-            // Determine if built-in
             let isBuiltIn = CGDisplayIsBuiltin(displayID) != 0
             
             let display = HardwareDisplay(
@@ -63,9 +60,7 @@ class DisplayManager {
     
     // MARK: - Environment Collections logic
     
-    /// Generates a signature for the current set of connected monitors
     private func currentEnvironmentSignature() -> String {
-        // Sort IDs to ensure order doesn't matter (e.g., plugging left vs right first)
         let ids = currentDisplays.map { $0.id }.sorted()
         return ids.joined(separator: "|")
     }
@@ -89,7 +84,6 @@ class DisplayManager {
             return nil
         }
         
-        // Find the monitor that matches the saved ID
         return currentDisplays.first(where: { $0.id == savedAnchorID })
     }
     

@@ -2,37 +2,29 @@
 //  DockAnchorApp.swift
 //  DockAnchor
 //
-//  Created for DockAnchor v2.0
+//  Created by Bradley Wyatt on 7/2/25.
+//  Copyright © 2025 Bradley Wyatt.
+//  Modified by Dave J. on 1/13/26.
 //
 
 import SwiftUI
 import ServiceManagement
 import Combine
 
-// MARK: - Window Delegate (Hides App on Close)
 class WindowHiderDelegate: NSObject, NSWindowDelegate {
-    private var appSettings: AppSettings?
-    
-    func setup(appSettings: AppSettings) {
-        self.appSettings = appSettings
-    }
-    
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         sender.orderOut(nil)
-        // If hidden from dock, ensure we stay in accessory mode
-        if appSettings?.hideFromDock == true {
+        if AppSettings.shared.hideFromDock {
             NSApp.setActivationPolicy(.accessory)
         }
         return false
     }
 }
 
-// MARK: - Main Application Entry
 @main
 struct DockAnchorApp: App {
-    @StateObject private var appSettings = AppSettings()
-    @StateObject private var dockMonitor = DockMonitor()
-    @StateObject private var menuBarManager = MenuBarManager()
+    @StateObject private var appSettings = AppSettings.shared
+    @StateObject private var dockMonitor = DockMonitor.shared
     
     @State private var hasPermissions = false
     @State private var timer: Timer?
@@ -46,7 +38,12 @@ struct DockAnchorApp: App {
                 ContentView()
                     .environmentObject(appSettings)
                     .environmentObject(dockMonitor)
-                    .onAppear(perform: setupMainApp)
+                    .onAppear {
+                        bindWindowDelegate()
+                    }
+                    .onOpenURL { url in
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
             } else {
                 OnboardingView(hasPermissions: $hasPermissions)
                     .onAppear(perform: startPermissionCheck)
@@ -54,10 +51,11 @@ struct DockAnchorApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .handlesExternalEvents(matching: Set(arrayLiteral: "main"))
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Show DockAnchor") {
-                    menuBarManager.showMainWindow()
+                    MenuBarManager.shared.showMainWindow()
                 }
                 .keyboardShortcut("d", modifiers: [.command, .option])
                 
@@ -65,6 +63,15 @@ struct DockAnchorApp: App {
                     dockMonitor.toggleProtection()
                 }
                 .keyboardShortcut("p", modifiers: [.command, .option])
+            }
+        }
+    }
+    
+    private func bindWindowDelegate() {
+        DispatchQueue.main.async {
+            for window in NSApp.windows {
+                window.delegate = windowHiderDelegate
+                window.center()
             }
         }
     }
@@ -84,90 +91,69 @@ struct DockAnchorApp: App {
             withAnimation { self.hasPermissions = true }
             timer?.invalidate()
             timer = nil
-        }
-    }
-    
-    private func setupMainApp() {
-        appDelegate.setup(appSettings: appSettings, dockMonitor: dockMonitor, menuBarManager: menuBarManager)
-        menuBarManager.setup(appSettings: appSettings, dockMonitor: dockMonitor)
-        windowHiderDelegate.setup(appSettings: appSettings)
-        
-        DispatchQueue.main.async {
-            for window in NSApp.windows {
-                window.delegate = windowHiderDelegate
-                window.center() // Center window on launch
-                window.makeKeyAndOrderFront(nil)
-            }
-            // FORCE window to front because there is no Dock icon to click
-            NSApp.activate(ignoringOtherApps: true)
-        }
-        
-        DisplayManager.shared.refreshHardwareMap()
-        dockMonitor.restoreSavedAnchor()
-        
-        if appSettings.runInBackground {
-            dockMonitor.startMonitoring()
+            appDelegate.startServices()
         }
     }
 }
 
 // MARK: - Application Delegate
 class ApplicationDelegate: NSObject, NSApplicationDelegate {
-    private var appSettings: AppSettings?
-    private var dockMonitor: DockMonitor?
-    private var menuBarManager: MenuBarManager?
-    
-    func setup(appSettings: AppSettings, dockMonitor: DockMonitor, menuBarManager: MenuBarManager) {
-        self.appSettings = appSettings
-        self.dockMonitor = dockMonitor
-        self.menuBarManager = menuBarManager
-    }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // CHANGED: Respect the 'hideFromDock' setting on launch
-        if let settings = appSettings {
-            if settings.hideFromDock {
-                NSApp.setActivationPolicy(.accessory)
-            } else {
-                NSApp.setActivationPolicy(.regular)
-            }
+        if AppSettings.shared.hideFromDock {
+            NSApp.setActivationPolicy(.accessory)
+        } else {
+            NSApp.setActivationPolicy(.regular)
+        }
+        
+        if AXIsProcessTrusted() {
+            startServices()
+        }
+    }
+    
+    func startServices() {
+        print("🚀 Starting DockAnchor Services...")
+        MenuBarManager.shared.start()
+        DisplayManager.shared.refreshHardwareMap()
+        DockMonitor.shared.restoreSavedAnchor()
+        
+        if AppSettings.shared.runInBackground {
+            DockMonitor.shared.startMonitoring()
         }
     }
     
     func applicationShouldHandleReopen(_ app: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        menuBarManager?.showMainWindow()
+        MenuBarManager.shared.showMainWindow()
         return false
     }
     
     func applicationWillTerminate(_ notification: Notification) {
-        dockMonitor?.stopMonitoring()
+        DockMonitor.shared.stopMonitoring()
     }
 }
 
 // MARK: - Menu Bar Manager
 class MenuBarManager: NSObject, ObservableObject {
+    static let shared = MenuBarManager()
+    
     private var statusItem: NSStatusItem?
-    private var appSettings: AppSettings?
-    private var dockMonitor: DockMonitor?
     private var cancellables = Set<AnyCancellable>()
     
-    func setup(appSettings: AppSettings, dockMonitor: DockMonitor) {
-        self.appSettings = appSettings
-        self.dockMonitor = dockMonitor
+    func start() {
+        let settings = AppSettings.shared
+        let monitor = DockMonitor.shared
         
-        updateStatusBarVisibility(isVisible: appSettings.showStatusIcon)
+        updateStatusBarVisibility(isVisible: settings.showStatusIcon)
         
-        appSettings.$showStatusIcon
-            .sink { [weak self] show in
-                self?.updateStatusBarVisibility(isVisible: show)
-            }
+        settings.$showStatusIcon
+            .sink { [weak self] show in self?.updateStatusBarVisibility(isVisible: show) }
             .store(in: &cancellables)
         
-        dockMonitor.$isActive
+        monitor.$isActive
             .sink { [weak self] _ in self?.updateMenu() }
             .store(in: &cancellables)
             
-        dockMonitor.$anchoredDisplayName
+        monitor.$anchoredDisplayName
             .sink { [weak self] _ in self?.updateMenu() }
             .store(in: &cancellables)
     }
@@ -192,20 +178,21 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     func updateMenu() {
-        guard let dockMonitor = dockMonitor, let statusItem = statusItem else { return }
+        guard let statusItem = statusItem else { return }
         
         let menu = NSMenu()
+        let monitor = DockMonitor.shared
         
-        let statusTitle = dockMonitor.isActive ? "🟢 Protection Active" : "🔴 Protection Inactive"
+        let statusTitle = monitor.isActive ? "🟢 Protection Active" : "🔴 Protection Inactive"
         menu.addItem(NSMenuItem(title: statusTitle, action: nil, keyEquivalent: ""))
         
-        let anchorTitle = "⚓️ \(dockMonitor.anchoredDisplayName)"
+        let anchorTitle = "⚓️ \(monitor.anchoredDisplayName)"
         menu.addItem(NSMenuItem(title: anchorTitle, action: nil, keyEquivalent: ""))
         
         menu.addItem(NSMenuItem.separator())
         
         let toggleItem = NSMenuItem(
-            title: dockMonitor.isActive ? "Stop Protection" : "Start Protection",
+            title: monitor.isActive ? "Stop Protection" : "Start Protection",
             action: #selector(toggleProtection),
             keyEquivalent: "p"
         )
@@ -231,20 +218,31 @@ class MenuBarManager: NSObject, ObservableObject {
     
     @objc func menuBarClicked() { }
     
-    @objc func toggleProtection() { dockMonitor?.toggleProtection() }
+    @objc func toggleProtection() { DockMonitor.shared.toggleProtection() }
     
-    @objc func setAnchorToCurrent() { dockMonitor?.setAnchorToCurrentMouseDisplay() }
+    @objc func setAnchorToCurrent() { DockMonitor.shared.setAnchorToCurrentMouseDisplay() }
     
     @objc func showMainWindow() {
         NSApp.activate(ignoringOtherApps: true)
-        // If user wants to see the window, temporarily bring activation policy to regular
-        // to ensure it behaves like a normal window, then switch back if needed.
-        // Or just force front:
+        
+        var foundWindow = false
         for window in NSApp.windows {
             if window.contentViewController != nil {
                 window.makeKeyAndOrderFront(nil)
+                foundWindow = true
                 return
             }
+        }
+        
+        if !foundWindow {
+            if let url = URL(string: "dockanchor://main") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+        
+        if AppSettings.shared.hideFromDock {
+             NSApp.setActivationPolicy(.regular)
+             NSApp.activate(ignoringOtherApps: true)
         }
     }
     

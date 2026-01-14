@@ -2,7 +2,9 @@
 //  DockMonitor.swift
 //  DockAnchor
 //
-//  Created for DockAnchor v2.0
+//  Created by Bradley Wyatt on 7/2/25.
+//  Copyright © 2025 Bradley Wyatt.
+//  Modified by Dave J. on 1/13/26.
 //
 
 import Foundation
@@ -148,30 +150,20 @@ class DockMonitor: ObservableObject {
         if isUnlockedTemporarily { return Unmanaged.passUnretained(event) }
         guard let anchorID = anchorDisplay?.directDisplayID else { return Unmanaged.passUnretained(event) }
         
-        let location = event.location // Top-Left (0,0) coordinates
+        let location = event.location
         
         for screen in NSScreen.screens {
             guard let screenID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { continue }
             
-            // Skip the anchor screen
             if screenID == anchorID { continue }
             
-            // FIX: Use CoreGraphics Bounds (matches event.location coordinates)
             let bounds = CGDisplayBounds(screenID)
             
-            // Check if mouse is horizontally within this screen
             if location.x >= bounds.minX && location.x <= bounds.maxX {
-                
-                // Check vertical bounds (is it on this screen at all?)
                 if location.y >= bounds.minY && location.y <= bounds.maxY {
-                    
-                    // THE FIX: "Bottom" in CG coords is maxY.
-                    // We block the bottom 15 pixels.
                     let bottomThreshold = bounds.maxY - 15
-                    
                     if location.y >= bottomThreshold {
-                        // print("🚫 Blocking Dock on non-anchor screen: \(screenID)")
-                        return nil // Block event
+                        return nil
                     }
                 }
             }

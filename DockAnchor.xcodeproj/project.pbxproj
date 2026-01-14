@@ -29,9 +29,22 @@
 		49C873302E15BF5300F73B78 /* DockAnchorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DockAnchorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		555810002F172DF1008DB2D5 /* Exceptions for "DockAnchor" folder in "DockAnchor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 49C873122E15BF5100F73B78 /* DockAnchor */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		49C873152E15BF5100F73B78 /* DockAnchor */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				555810002F172DF1008DB2D5 /* Exceptions for "DockAnchor" folder in "DockAnchor" target */,
+			);
 			path = DockAnchor;
 			sourceTree = "<group>";
 		};
@@ -397,6 +410,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DockAnchor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DockAnchor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -433,6 +447,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DockAnchor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DockAnchor;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

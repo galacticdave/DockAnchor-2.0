@@ -3,12 +3,12 @@
 //  DockAnchor
 //
 //  Created by Bradley Wyatt on 7/2/25.
-//  Refactored for v2.0
+//  Copyright © 2025 Bradley Wyatt.
+//  Modified by Dave J. on 1/13/26.
 //
 
 import SwiftUI
 
-// MARK: - Onboarding View (Hard Stop)
 struct OnboardingView: View {
     @Binding var hasPermissions: Bool
     
@@ -57,7 +57,6 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Hero Header
             VStack(spacing: 8) {
                 Image(systemName: dockMonitor.isActive ? "lock.laptopcomputer" : "lock.open.laptopcomputer")
                     .font(.system(size: 42))
@@ -68,7 +67,6 @@ struct ContentView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                // Status Badge
                 HStack(spacing: 6) {
                     Circle()
                         .fill(dockMonitor.isActive ? Color.green : Color.orange)

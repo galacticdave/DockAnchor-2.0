@@ -2,7 +2,9 @@
 //  AppSettings.swift
 //  DockAnchor
 //
-//  Created for DockAnchor v2.0
+//  Created by Bradley Wyatt on 7/2/25.
+//  Copyright © 2025 Bradley Wyatt.
+//  Modified by Dave J. on 1/13/26.
 //
 
 import Foundation
@@ -10,6 +12,8 @@ import SwiftUI
 import ServiceManagement
 
 class AppSettings: ObservableObject {
+    static let shared = AppSettings()
+    
     @Published var startAtLogin: Bool {
         didSet {
             UserDefaults.standard.set(startAtLogin, forKey: "startAtLogin")
@@ -32,7 +36,6 @@ class AppSettings: ObservableObject {
     @Published var hideFromDock: Bool {
         didSet {
             UserDefaults.standard.set(hideFromDock, forKey: "hideFromDock")
-            // Apply change immediately
             if hideFromDock {
                 NSApp.setActivationPolicy(.accessory)
             } else {
@@ -44,11 +47,8 @@ class AppSettings: ObservableObject {
     init() {
         self.runInBackground = UserDefaults.standard.object(forKey: "runInBackground") as? Bool ?? true
         self.showStatusIcon = UserDefaults.standard.object(forKey: "showStatusIcon") as? Bool ?? true
+        self.hideFromDock = UserDefaults.standard.object(forKey: "hideFromDock") as? Bool ?? false
         
-        // CHANGED: Default is now TRUE (Hide from Dock)
-        self.hideFromDock = UserDefaults.standard.object(forKey: "hideFromDock") as? Bool ?? true
-        
-        // Sync login state with system
         let currentStatus = SMAppService.mainApp.status == .enabled
         self.startAtLogin = currentStatus
     }
