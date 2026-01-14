@@ -4,7 +4,7 @@
 
 DockAnchor is a lightweight macOS utility that prevents the Dock from "jumping" between screens in multi-monitor setups. It locks the Dock to a specific monitor and intelligently remembers your preferences for different environments (e.g., Home vs. Office).
 
-> **Fork Note:** This is a modernized fork of the original [DockAnchor by bwya77](https://github.com/bwya77/DockAnchor). It adds hardware-level fingerprinting, environment collections, and Apple Silicon optimization.
+> **Fork Note:** This is a modernized fork of the original [DockAnchor](https://github.com/bwya77/DockAnchor). It adds hardware-level fingerprinting, environment collections, and Apple Silicon optimization.
 
 ---
 
@@ -28,19 +28,30 @@ Need the Dock on a different screen for just a second?
 
 ---
 
-## 🚀 Installation & Permissions
+## 🚀 Installation
 
 ### 1. Download
-Download the latest release from the [Releases Page](#).
+Download the latest `DockAnchor.zip` from the [Releases Page](../../releases).
 
-### 2. First Run (Critical)
-When you first open DockAnchor, you will see a **Permissions Required** screen.
-1.  Click **"Open System Settings"**.
-2.  Enable the switch for **DockAnchor**.
-3.  The app will detect the change and launch automatically.
+### 2. Move to Applications
+Unzip the file and drag **DockAnchor** into your **Applications** folder.
 
-> **Why is this needed?**
-> DockAnchor uses a global event tap to monitor mouse movements and the `Option` key. macOS requires Accessibility permissions for any app that intercepts these events. **No data is recorded or transmitted.**
+### 3. Open (Important!)
+Because this is a free, open-source tool, it is not notarized by Apple. You will likely see a warning that the app is "damaged" or from an "unidentified developer."
+
+**To bypass this:**
+1.  **Right-Click** (or Control-Click) the DockAnchor app.
+2.  Select **Open** from the menu.
+3.  Click **Open** in the dialog box.
+
+> **Still getting a "Damaged" error?**
+> macOS sometimes quarantines unsigned apps too aggressively. Run this command in Terminal to fix it:
+> ```bash
+> xattr -cr /Applications/DockAnchor.app
+> ```
+
+### 4. Permissions
+On first launch, click **"Open System Settings"** when prompted and enable accessibility permissions for DockAnchor. This allows the app to detect mouse movements and keep your Dock in place.
 
 ---
 
@@ -64,12 +75,12 @@ The app runs silently in your Menu Bar.
 **Steps:**
 1.  Clone the repository.
 2.  Open `DockAnchor.xcodeproj` in Xcode.
-3.  Ensure Signing & Capabilities are set to your development team.
-4.  Build and Run.
+3.  Build and Run.
 
-*Note: If building from Xcode, you may need to reset permissions if the app doesn't appear in System Settings:*
+*Note: If building locally, you may need to reset permissions if the app doesn't appear in System Settings:*
 ```bash
-tccutil reset Accessibility com.yourname.DockAnchor
+tccutil reset Accessibility galactic.DockAnchor.v2
+
 
 🤝 Credits & License
 This project is an open-source fork based on the excellent work by bwya77.
@@ -79,5 +90,3 @@ Original Author: Bradley Wyatt (bwya77)
 Original Repository: DockAnchor v1.5
 
 License: MIT License (See LICENSE file)
-
-We have maintained the original MIT license to ensure this tool remains free and open for the macOS community.
